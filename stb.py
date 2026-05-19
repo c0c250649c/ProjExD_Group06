@@ -83,6 +83,9 @@ class Player(pg.sprite.Sprite):
         self.speed = 5
         self.dy = 0  # 上下移動の状態
 
+        self.shield = False  # シールド状態
+        self.shield_stock = 3  # シールドストック（残り数）を追加
+
     def update(self):
         keys = pg.key.get_pressed()
         self.dy = 0
@@ -107,6 +110,16 @@ class Player(pg.sprite.Sprite):
             self.image = self.img_normal
 
         self.rect.clamp_ip(screen.get_rect())
+
+    def draw_shield(self, surface):
+
+        font = pg.font.Font(None, 30)
+
+        txt = font.render(f"Shield: {self.shield_stock}",True,(0, 255, 255))
+
+        surface.blit(txt, (10, 50))
+
+        if self.shield:pg.draw.circle(surface,(0, 255, 255),self.rect.center,40,3) # シールド描画追加
 
 # -----------------------------
 # Bullet
@@ -214,6 +227,11 @@ while True:
             elif ev.key == pg.K_x and laser_cooldown <= 0:  # xキーでレーザー発射
                 laser_group.add(Laser(player.rect.right, player.rect.centery))
                 laser_cooldown = 60  # 1秒のクールダウン
+            
+            if ev.key == pg.K_s:  # sキーでシールドON/OFF
+                if player.shield_stock > 0 and not player.shield:  # シールドストックがあって、現在シールドがない場合
+                    player.shield = True
+                    player.shield_stock -= 1
 
     if not game_over:
         scroll_x += 3
@@ -232,9 +250,16 @@ while True:
         laser_group.update()  # レーザーも更新
         enemy_group.update()
 
-        # 敵と衝突 → ゲームオーバー
+        # 敵と衝突 → ゲームオーバー シールド判定追加、被弾処理変更
         if pg.sprite.spritecollide(player, enemy_group, True):
-            game_over = True
+
+            # シールドがある場合
+            if player.shield:
+                player.shield = False
+
+            # シールドなしならゲームオーバー
+            else:
+                game_over = True
 
         # 弾が敵に当たったらスコア加算
         hits = pg.sprite.groupcollide(bullet_group, enemy_group, True, True)
@@ -248,6 +273,7 @@ while True:
 
     draw_background(scroll_x)
     player_group.draw(screen)
+    player.draw_shield(screen)  # シールド描画
     bullet_group.draw(screen)
     laser_group.draw(screen)
     enemy_group.draw(screen)
