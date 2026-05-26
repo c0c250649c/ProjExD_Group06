@@ -19,7 +19,7 @@ pg.display.set_caption("Gradius-like Shooter")
 main_clock = pg.time.Clock()
 
 # -----------------------------
-# 安全な読み込み関数（画像・音声・BGM）
+# 安全な読み込み関数（画像・音声）
 # -----------------------------
 def load_image_safe(path):
     if not os.path.exists(path):
@@ -52,20 +52,6 @@ def load_sound_safe(path):
         print(f"[ERROR] Cannot load sound: {path}")
         print("Reason:", e)
         return None
-
-# ★ 追加: BGM再生用の安全な関数
-def play_bgm_safe(path):
-    if not os.path.exists(path):
-        print(f"[ERROR] BGM file not found: {path}")
-        return
-    try:
-        pg.mixer.music.load(path)
-        pg.mixer.music.set_volume(0.5)  # 音量調整 (0.0 〜 1.0)
-        pg.mixer.music.play(-1)         # -1で無限ループ再生
-        print(f"[OK] Playing BGM: {path}")
-    except Exception as e:
-        print(f"[ERROR] Cannot play BGM: {path}")
-        print("Reason:", e)
 
 # -----------------------------
 # Score（スコア表示）
@@ -200,7 +186,6 @@ heaven_raw = load_image_safe("fig/heaven.png")
 heaven_img = pg.transform.smoothscale(heaven_raw, (WIDTH, HEIGHT))
 
 gameover_se = load_sound_safe("BGM/heaven.wav")
-bgm_file = "BGM/背景BGM.mp3"  # ★ 追加: BGMのファイルパス
 
 fade_surface = pg.Surface((WIDTH, HEIGHT))
 fade_surface.fill((255, 255, 255))
@@ -222,9 +207,6 @@ scroll_x = 0
 game_state = "playing" 
 font = pg.font.Font(None, 80)
 font_small = pg.font.Font(None, 40)
-
-# ★ 追加: ゲーム開始時にBGMを再生
-play_bgm_safe(bgm_file)
 
 while True:
     for ev in pg.event.get():
@@ -255,9 +237,6 @@ while True:
                     enemy_group.empty()
                     bullet_group.empty()
 
-                    # ★ 追加: コンティニュー時にBGMを再スタート
-                    play_bgm_safe(bgm_file)
-
     # --- 更新処理 ---
     if game_state == "playing":
         scroll_x += 3
@@ -274,9 +253,6 @@ while True:
         if pg.sprite.spritecollide(player, enemy_group, True):
             game_state = "fading"
             fade_timer = 0
-            
-            # ★ 追加: 敵にぶつかったらBGMを止める
-            pg.mixer.music.stop()
 
         # 弾が敵に当たったらスコア加算
         hits = pg.sprite.groupcollide(bullet_group, enemy_group, True, True)
@@ -300,7 +276,7 @@ while True:
             game_state = "heaven" 
             heaven_timer = 0
             
-            # 天国の画面に切り替わった瞬間にSEを再生！
+            # ★ 天国の画面に切り替わった瞬間にSEを再生！
             if gameover_se:
                 gameover_se.play()
             
